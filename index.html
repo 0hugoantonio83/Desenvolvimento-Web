@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IP API</title>
+  <style>
+    /* Seu CSS (o mesmo de antes) */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #fff;
+      text-align: center;
+    }
+    h1 { margin-bottom: 20px; }
+    input[type="text"] {
+      width: 300px; padding: 10px; font-size: 16px;
+      border: 1px solid #ccc; border-radius: 5px 0 0 5px; outline: none;
+    }
+    button {
+      padding: 10px 20px; background-color: #4CAF50; color: white;
+      border: none; border-radius: 0 5px 5px 0; font-size: 16px;
+      cursor: pointer; transition: background 0.2s;
+    }
+    button:hover { background-color: #45a049; }
+    table {
+      width: 80%; margin: 30px auto;
+      border-collapse: collapse; text-align: left;
+    }
+    th, td { border-bottom: 1px solid #ddd; padding: 10px; }
+    th { background-color: #f8f8f8; font-weight: bold; }
+    td:last-child { text-align: center; }
+    .remove-btn {
+      cursor: pointer; font-size: 18px; color: black;
+      transition: transform 0.2s, color 0.2s;
+    }
+    .remove-btn:hover { color: darkred; transform: scale(1.2); }
+  </style>
+</head>
+<body>
+
+  <h1>IP API</h1>
+
+  <div>
+    <input type="text" id="ipInput" placeholder="1.1.1.1">
+    <button onclick="window.pesquisarIP()">Pesquisar</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>IP</th>
+        <th>Org</th>
+        <th>Country</th>
+        <th>City</th>
+        <th>Clear</th>
+      </tr>
+    </thead>
+    <tbody id="ipTableBody">
+      </tbody>
+  </table>
+
+  <script type="module">
+    // Importa o módulo de storage (que agora fala com localhost:3000)
+    import storage from './storage.js';
+
+    // Seu token da API ipinfo.io
+    const IPINFO_TOKEN = '9f16803660517c';
+    const tableBody = document.getElementById('ipTableBody');
+
+    /**
+     * Adiciona uma linha de dados de IP à tabela HTML
+     * @param {object} ipData - O objeto de dados do IP (DEVE conter um 'id')
+     */
+    function addIpToTable(ipData) {
+      // Garante que temos os dados mínimos para exibir e remover
+      if (!ipData || !ipData.id) return;
+
+      const newRow = tableBody.insertRow(0); // Insere no topo
+      // Armazena o ID no elemento da linha para referência
+      newRow.setAttribute('data-id', ipData.id);
+
+      newRow.innerHTML = `
+        <td>${ipData.ip || 'N/A'}</td>
+        <td>${ipData.org || 'N/A'}</td>
+        <td>${ipData.country || 'N/A'}</td>
+        <td>${ipData.city || 'N/A'}</td>
+        <td>
+          <span class="remove-btn" onclick="window.remover(this, ${ipData.id})">✖</span>
+        </td>
+      `;
+    }
+
+    /**
+     * Função para remover a linha da tabela E do db.json
+     * @param {HTMLElement} el - O elemento <span> clicado
+     * @param {number} id - O ID do host no db.json
+     */
+    window.remover = async function(el, id) {
+      if (!confirm('Tem certeza que deseja remover este IP?')) {
+        return;
+      }
+      try {
+        const success = await storage.remove('ips', id);
+        if (success) {
+          el.closest('tr').remove(); // Remove a linha da tabela
+        } else {
+          alert('Não foi possível remover o IP do servidor local.');
+        }
+      } catch (error) {
+        console.error('Erro ao remover:', error);
+        alert('Erro ao remover IP.');
+      }
+    }
+
+    /**
+     * Função para pesquisar o IP, salvar no db.json e adicionar na tabela
+     */
+    window.pesquisarIP = async function() {
+      const ipInput = document.getElementById('ipInput');
+      const ip = ipInput.value.trim();
+      
+      if (ip === '') {
+        return alert('Digite um IP para pesquisar.');
+      }
+
+      try {
+        // --- ETAPA 1: Buscar dados da API externa (ipinfo.io) ---
+        const res = await fetch(`https://ipinfo.io/${ip}/json?token=${IPINFO_TOKEN}`);
+        if (!res.ok) {
+          throw new Error('IP não encontrado ou erro na API ipinfo.');
+        }
+        
+        // Este é o "pacote inteiro json" que você queria
+        const ipInfoData = await res.json();
+
+        // --- ETAPA 2: Salvar o "pacote inteiro" no servidor local (db.json) ---
+        const savedData = await storage.create('ips', ipInfoData);
+
+        // --- ETAPA 3: Adicionar os dados salvos (que agora têm um ID) na tabela ---
+        if (savedData && savedData.id) {
+          addIpToTable(savedData);
+          ipInput.value = ''; // Limpa o input
+        } else {
+          alert('Não foi possível salvar os dados no servidor local (localhost:3000).');
+        }
+
+      } catch (error) {
+        console.error("Erro na pesquisa:", error);
+        alert(`Ocorreu um erro ao pesquisar o IP: ${error.message}`);
+      }
+    }
+
+    /**
+     * Carrega os dados iniciais do db.json ao abrir a página
+     */
+    async function loadInitialData() {
+      try {
+        const ips = await storage.readAll('ips');
+        if (ips) {
+          tableBody.innerHTML = ''; // Limpa a tabela
+          // Adiciona cada IP na tabela, na ordem salva
+          ips.reverse().forEach(addIpToTable); 
+        } else {
+          throw new Error('Resposta nula do servidor');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados iniciais:', error);
+        alert('Não foi possível conectar ao servidor local (localhost:3000). Verifique se o json-server está rodando.');
+      }
+    }
+
+    // Carrega os dados quando o DOM estiver pronto
+    document.addEventListener('DOMContentLoaded', loadInitialData);
+  </script>
+
+</body>
+</html>
