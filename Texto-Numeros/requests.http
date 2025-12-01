@@ -1,0 +1,9 @@
+@requisicao=http://localhost:3000/requisicao
+
+### Post /requisicao/lowercase para enviar uma resposta toda minúscula 
+POST {{requisicao}}/rotas/lowercase
+Content-Type: application/json
+
+{
+    "input": "Lorem Ipsum"
+}

@@ -1,0 +1,7 @@
+@requisicao=http://localhost:3000/requisicao
+
+### Get /requisicao com o tipo txt na resposta
+GET {{requisicao}}/
+
+### Get /requisicao/pt com o tipo json em português na resposta
+GET {{requisicao}}/pt
