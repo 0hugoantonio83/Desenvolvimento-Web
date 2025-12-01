@@ -1,0 +1,20 @@
+@requisicao=http://localhost:3000/requisicao
+
+### Post /requisicao/lowercase para enviar uma resposta toda minúscula
+POST {{requisicao}}/lowercase
+Content-Type: application/json
+
+{
+    "pedido": "Lorem Ipsum"
+}
+
+### Post /requisicao/uppercase para enviar uma resposta toda maiúscula
+POST {{requisicao}}/uppercase
+Content-Type: application/json
+
+{
+    "pedido": "Lorem Ipsum"
+}
+
+### Get /requisicao/minimo para exibir o menor número de uma entrada
+GET {{requisicao}}/minimo/?input=10,1,100
