@@ -26,29 +26,32 @@ rota.post('/:param', (pedido, resposta) => {
     return resposta.send(resultado);
 });
 
-rota.get('/10,1,100', (pedido, resposta) => {
-    const corpo = pedido.body.pedido;
-    const param = pedido.params.param;
+rota.get('/numero/:param', (pedido, resposta) => {
+    const entrada = pedido.query.input; 
+    const acao = pedido.params.param;   
 
-    if (!corpo) {
-        return resposta.status(400).send('A entrada não pode ser vazia')
+    if (!entrada) {
+        return resposta.status(400).send('A entrada não pode ser vazia');
     }
 
-    let resultado = corpo;
+    const numeros = entrada.split(',').map(num => Number(num.trim()));
+    let resultado;
 
-    if (param === 'lowercase') {
-        resultado = corpo.toLowerCase();
+    if (numeros.some(isNaN)) {
+        return resposta.status(400).send('A lista deve conter apenas números');
+    }
 
-    } else if (param === 'uppercase') {
-        resultado = corpo.toUpperCase();
+    if (acao === 'minimo') {
+        resultado = Math.min(...numeros);
+
+    } else if (acao === 'maximo') {
+        resultado = Math.max(...numeros);
 
     } else {
-        return resposta.status(400).send('A ação não pode ser vazia');
-
+        return resposta.status(400).send('A ação deve ser minimo ou maximo');
     }
 
-    return resposta.send(resultado);
+    return resposta.send(resultado.toString());
 });
-Math.min
-Math.max
+
 export default rota

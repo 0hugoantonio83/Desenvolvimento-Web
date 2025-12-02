@@ -16,5 +16,8 @@ Content-Type: application/json
     "pedido": "Lorem Ipsum"
 }
 
-### Get /requisicao/minimo para exibir o menor número de uma entrada
-GET {{requisicao}}/minimo/?input=10,1,100
+### Get /requisicao/numero/minimo para exibir o menor número de uma entrada
+GET {{requisicao}}/numero/minimo?input=10,1,100
+
+### Get /requisicao/numero/maximo para exibir o maior número de uma entrada
+GET {{requisicao}}/numero/maximo?input=10,1,100
